@@ -152,8 +152,18 @@ async function decompress(b64) {
 async function copyShareLink() {
   const compact = JSON.stringify(assignments.map(toCompact));
   const compressed = await compress(compact);
-  const url = `${location.origin}${location.pathname}#s=${compressed}`;
-  navigator.clipboard.writeText(url).then(() => showToast('URLをコピーしました'));
+  const longUrl = `${location.origin}${location.pathname}#s=${compressed}`;
+
+  try {
+    const res = await fetch(`https://is.gd/create.php?format=simple&url=${encodeURIComponent(longUrl)}`);
+    if (!res.ok) throw new Error();
+    const shortUrl = (await res.text()).trim();
+    await navigator.clipboard.writeText(shortUrl);
+    showToast('短縮URLをコピーしました');
+  } catch {
+    await navigator.clipboard.writeText(longUrl);
+    showToast('URLをコピーしました');
+  }
 }
 
 async function loadShareFromHash() {
