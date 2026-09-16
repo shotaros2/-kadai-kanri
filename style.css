@@ -199,6 +199,12 @@ body {
 .badge-later    { background: var(--surface);       color: var(--text-sub); }
 .badge-done     { background: var(--green-light);   color: var(--green); }
 
+.card-type-label {
+  font-size: 11px;
+  color: var(--text-sub);
+  margin-bottom: 3px;
+}
+
 .card-content {
   font-size: 13px;
   color: var(--text);
@@ -219,6 +225,39 @@ body {
   flex-shrink: 0;
   margin-top: -2px;
 }
+
+/* Type toggle */
+.type-toggle {
+  display: flex;
+  gap: 4px;
+  background: var(--surface);
+  padding: 4px;
+  border-radius: var(--radius-sm);
+  width: fit-content;
+}
+.type-btn {
+  border: none;
+  background: none;
+  cursor: pointer;
+  padding: 6px 18px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-sub);
+  transition: background .15s, color .15s;
+}
+.type-btn.active {
+  background: var(--bg);
+  color: var(--text);
+  box-shadow: var(--shadow);
+}
+
+/* Exam badge */
+.badge-exam-overdue  { background: #fdf2f8; color: #9d174d; }
+.badge-exam-today    { background: #fdf4ff; color: #7e22ce; }
+.badge-exam-tomorrow { background: #eff6ff; color: #1d4ed8; }
+.badge-exam-later    { background: #f5f3ff; color: #6d28d9; }
+.badge-exam-done     { background: var(--green-light); color: var(--green); }
 
 /* Modal */
 .modal-overlay {

@@ -5,6 +5,7 @@ const STORAGE_KEY = 'kadai_assignments';
 let assignments = [];
 let filter = 'all';
 let editingId = null;
+let currentType = 'assignment';
 
 // --- Storage ---
 function load() {
@@ -32,7 +33,10 @@ function deadlineStatus(isoStr, done) {
   return 'later';
 }
 
-function deadlineBadgeClass(status) {
+function deadlineBadgeClass(status, type) {
+  if (type === 'exam') {
+    return { overdue: 'badge-exam-overdue', today: 'badge-exam-today', tomorrow: 'badge-exam-tomorrow', later: 'badge-exam-later', done: 'badge-exam-done' }[status];
+  }
   return { overdue: 'badge-overdue', today: 'badge-today', tomorrow: 'badge-tomorrow', later: 'badge-later', done: 'badge-done' }[status];
 }
 
@@ -59,7 +63,8 @@ function escHtml(str) {
 function getFiltered() {
   return assignments
     .filter(a => {
-      if (filter === 'pending') return !a.done;
+      if (filter === 'assignment') return !a.done && a.type !== 'exam';
+      if (filter === 'exam') return !a.done && a.type === 'exam';
       if (filter === 'done') return a.done;
       return true;
     })
@@ -82,9 +87,11 @@ function renderList() {
   empty.hidden = true;
 
   list.innerHTML = items.map(a => {
+    const type = a.type || 'assignment';
     const status = deadlineStatus(a.deadline, a.done);
-    const badgeClass = deadlineBadgeClass(status);
+    const badgeClass = deadlineBadgeClass(status, type);
     const badgeLabel = deadlineBadgeLabel(status, a.deadline);
+    const typeLabel = type === 'exam' ? '📝 テスト' : '📋 課題';
     return `
       <div class="card ${a.done ? 'done-card' : ''}" data-id="${escHtml(a.id)}">
         <input class="card-check" type="checkbox" ${a.done ? 'checked' : ''} data-id="${escHtml(a.id)}" aria-label="完了トグル">
@@ -93,6 +100,7 @@ function renderList() {
             <span class="card-subject">${escHtml(a.subject)}</span>
             <span class="deadline-badge ${badgeClass}">${badgeLabel}</span>
           </div>
+          <div class="card-type-label">${typeLabel}</div>
           ${a.content ? `<div class="card-content">${escHtml(a.content)}</div>` : ''}
           ${a.memo ? `<div class="card-memo">${escHtml(a.memo)}</div>` : ''}
         </div>
@@ -105,18 +113,38 @@ function renderList() {
   }).join('');
 }
 
+// --- Modal type toggle ---
+function setType(type) {
+  currentType = type;
+  document.querySelectorAll('.type-btn').forEach(b => b.classList.toggle('active', b.dataset.type === type));
+  const labelDeadline = document.getElementById('label-deadline');
+  const labelContent = document.getElementById('label-content');
+  const fContent = document.getElementById('f-content');
+  if (type === 'exam') {
+    labelDeadline.childNodes[0].textContent = '日時 ';
+    labelContent.textContent = '出題範囲';
+    fContent.placeholder = '例：第1章〜第3章、p.1-60';
+  } else {
+    labelDeadline.childNodes[0].textContent = '締め切り ';
+    labelContent.textContent = '内容';
+    fContent.placeholder = '課題の内容や指示を入力';
+  }
+}
+
 // --- Modal ---
 function openModal(id = null) {
   editingId = id;
   const overlay = document.getElementById('modal-overlay');
   const title = document.getElementById('modal-title');
   const a = id ? assignments.find(x => x.id === id) : null;
+  const type = a ? (a.type || 'assignment') : 'assignment';
 
-  title.textContent = id ? '課題を編集' : '課題を追加';
+  title.textContent = id ? '編集' : '追加';
   document.getElementById('f-subject').value = a ? a.subject : '';
   document.getElementById('f-deadline').value = a ? a.deadline : '';
   document.getElementById('f-content').value = a ? a.content : '';
   document.getElementById('f-memo').value = a ? a.memo : '';
+  setType(type);
 
   overlay.hidden = false;
   document.getElementById('f-subject').focus();
@@ -129,12 +157,12 @@ function closeModal() {
 }
 
 // --- Share ---
-// キー名を省いた配列形式 [id, subject, deadline, content, memo, done, createdAt] で圧縮
+// 配列形式 [id, subject, deadline, content, memo, done, createdAt, type] で圧縮
 function toCompact(a) {
-  return [a.id, a.subject, a.deadline, a.content, a.memo, a.done ? 1 : 0, a.createdAt];
+  return [a.id, a.subject, a.deadline, a.content, a.memo, a.done ? 1 : 0, a.createdAt, a.type || 'assignment'];
 }
-function fromCompact([id, subject, deadline, content, memo, done, createdAt]) {
-  return { id, subject, deadline, content: content || '', memo: memo || '', done: !!done, createdAt };
+function fromCompact([id, subject, deadline, content, memo, done, createdAt, type]) {
+  return { id, subject, deadline, content: content || '', memo: memo || '', done: !!done, createdAt, type: type || 'assignment' };
 }
 
 async function compress(str) {
@@ -209,7 +237,7 @@ function handleListClick(e) {
   const { action, id } = btn.dataset;
   if (action === 'edit') { openModal(id); return; }
   if (action === 'delete') {
-    if (confirm('この課題を削除しますか？')) {
+    if (confirm('削除しますか？')) {
       assignments = assignments.filter(a => a.id !== id);
       save();
       renderList();
@@ -223,12 +251,13 @@ function handleFormSubmit(e) {
   const deadline = document.getElementById('f-deadline').value;
   const content = document.getElementById('f-content').value.trim();
   const memo = document.getElementById('f-memo').value.trim();
+  const type = currentType;
 
   if (editingId) {
     const a = assignments.find(x => x.id === editingId);
-    if (a) { a.subject = subject; a.deadline = deadline; a.content = content; a.memo = memo; }
+    if (a) { a.subject = subject; a.deadline = deadline; a.content = content; a.memo = memo; a.type = type; }
   } else {
-    assignments.push({ id: crypto.randomUUID(), subject, deadline, content, memo, done: false, createdAt: new Date().toISOString() });
+    assignments.push({ id: crypto.randomUUID(), subject, deadline, content, memo, done: false, createdAt: new Date().toISOString(), type });
   }
 
   save();
@@ -248,6 +277,11 @@ async function init() {
   document.getElementById('modal-overlay').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(); });
   document.getElementById('form').addEventListener('submit', handleFormSubmit);
   document.getElementById('list').addEventListener('click', handleListClick);
+
+  document.querySelector('.type-toggle').addEventListener('click', e => {
+    const btn = e.target.closest('.type-btn');
+    if (btn) setType(btn.dataset.type);
+  });
 
   document.getElementById('filter-tabs').addEventListener('click', e => {
     const tab = e.target.closest('.tab');
