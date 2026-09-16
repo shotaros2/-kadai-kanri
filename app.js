@@ -129,23 +129,42 @@ function closeModal() {
 }
 
 // --- Share ---
-function buildShareData() {
-  return btoa(unescape(encodeURIComponent(JSON.stringify(assignments))));
+// キー名を省いた配列形式 [id, subject, deadline, content, memo, done, createdAt] で圧縮
+function toCompact(a) {
+  return [a.id, a.subject, a.deadline, a.content, a.memo, a.done ? 1 : 0, a.createdAt];
+}
+function fromCompact([id, subject, deadline, content, memo, done, createdAt]) {
+  return { id, subject, deadline, content: content || '', memo: memo || '', done: !!done, createdAt };
 }
 
-function copyShareLink() {
-  const url = `${location.origin}${location.pathname}#share=${buildShareData()}`;
+async function compress(str) {
+  const stream = new Blob([str]).stream().pipeThrough(new CompressionStream('deflate-raw'));
+  const buf = await new Response(stream).arrayBuffer();
+  return btoa(String.fromCharCode(...new Uint8Array(buf)));
+}
+
+async function decompress(b64) {
+  const buf = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+  const stream = new Blob([buf]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+  return new Response(stream).text();
+}
+
+async function copyShareLink() {
+  const compact = JSON.stringify(assignments.map(toCompact));
+  const compressed = await compress(compact);
+  const url = `${location.origin}${location.pathname}#s=${compressed}`;
   navigator.clipboard.writeText(url).then(() => showToast('URLをコピーしました'));
 }
 
-function loadShareFromHash() {
+async function loadShareFromHash() {
   const hash = location.hash;
-  const m = hash.match(/^#share=(.+)$/);
+  const m = hash.match(/^#s=(.+)$/);
   if (!m) return;
   try {
-    const data = JSON.parse(decodeURIComponent(escape(atob(m[1]))));
+    const json = await decompress(m[1]);
+    const data = JSON.parse(json);
     if (Array.isArray(data)) {
-      assignments = data;
+      assignments = data.map(fromCompact);
       save();
       history.replaceState(null, '', location.pathname);
       showToast('共有データを読み込みました');
@@ -208,9 +227,9 @@ function handleFormSubmit(e) {
 }
 
 // --- Init ---
-function init() {
+async function init() {
   load();
-  loadShareFromHash();
+  await loadShareFromHash();
   renderList();
 
   document.getElementById('btn-add').addEventListener('click', () => openModal());
