@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>課題リスト</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="header">
+    <h1 class="header-title">課題リスト</h1>
+    <div class="header-actions">
+      <button class="btn btn-share" id="btn-share">共有</button>
+      <button class="btn btn-primary" id="btn-add">＋ 追加</button>
+    </div>
+  </header>
+
+  <main class="main">
+    <div class="filter-tabs" id="filter-tabs">
+      <button class="tab active" data-filter="all">すべて</button>
+      <button class="tab" data-filter="pending">未完了</button>
+      <button class="tab" data-filter="done">完了済み</button>
+    </div>
+
+    <div class="list" id="list"></div>
+    <p class="empty" id="empty" hidden>課題はありません</p>
+  </main>
+
+  <div class="modal-overlay" id="modal-overlay" hidden>
+    <div class="modal">
+      <h2 class="modal-title" id="modal-title">課題を追加</h2>
+      <form id="form">
+        <div class="field">
+          <label for="f-subject">科目名 <span class="required">*</span></label>
+          <input type="text" id="f-subject" placeholder="例：英語II" required>
+        </div>
+        <div class="field">
+          <label for="f-deadline">締め切り <span class="required">*</span></label>
+          <input type="datetime-local" id="f-deadline" required>
+        </div>
+        <div class="field">
+          <label for="f-content">内容</label>
+          <textarea id="f-content" rows="3" placeholder="課題の内容や指示を入力"></textarea>
+        </div>
+        <div class="field">
+          <label for="f-memo">メモ</label>
+          <textarea id="f-memo" rows="2" placeholder="補足メモ（参考書のページ数など）"></textarea>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-cancel" id="btn-cancel">キャンセル</button>
+          <button type="submit" class="btn btn-primary" id="btn-submit">保存</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
