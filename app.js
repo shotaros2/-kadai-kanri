@@ -155,7 +155,7 @@ async function copyShareLink() {
   const longUrl = `${location.origin}${location.pathname}#s=${compressed}`;
 
   try {
-    const res = await fetch(`https://is.gd/create.php?format=simple&url=${encodeURIComponent(longUrl)}`);
+    const res = await fetch(`/api/shorten?url=${encodeURIComponent(longUrl)}`);
     if (!res.ok) throw new Error();
     const shortUrl = (await res.text()).trim();
     await navigator.clipboard.writeText(shortUrl);
