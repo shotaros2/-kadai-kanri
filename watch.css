@@ -367,6 +367,69 @@ body {
 }
 .member-chip.chip-mine:hover { opacity: .8; }
 
+/* Medal chips */
+.member-chip.chip-gold {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  color: #92400e;
+  border-color: #f59e0b;
+  font-weight: 700;
+  position: relative;
+  overflow: hidden;
+  animation: medal-glow-gold 2s ease-in-out infinite;
+}
+.member-chip.chip-silver {
+  background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+  color: #334155;
+  border-color: #94a3b8;
+  font-weight: 700;
+  position: relative;
+  overflow: hidden;
+  animation: medal-glow-silver 2.2s ease-in-out infinite;
+}
+.member-chip.chip-bronze {
+  background: linear-gradient(135deg, #fdf2e9 0%, #f5cba7 100%);
+  color: #7d4e1a;
+  border-color: #cd7f32;
+  font-weight: 700;
+  position: relative;
+  overflow: hidden;
+  animation: medal-glow-bronze 2.4s ease-in-out infinite;
+}
+.member-chip.chip-gold::after,
+.member-chip.chip-silver::after,
+.member-chip.chip-bronze::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -75%;
+  width: 50%;
+  height: 200%;
+  background: rgba(255,255,255,.45);
+  transform: skewX(-20deg);
+  animation: medal-shine 3s ease-in-out infinite;
+}
+.member-chip.chip-silver::after { animation-delay: .6s; }
+.member-chip.chip-bronze::after { animation-delay: 1.2s; }
+
+@keyframes medal-glow-gold {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(245,158,11,.3); }
+  50%       { box-shadow: 0 0 8px 3px rgba(245,158,11,.45); }
+}
+@keyframes medal-glow-silver {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(148,163,184,.3); }
+  50%       { box-shadow: 0 0 8px 3px rgba(148,163,184,.45); }
+}
+@keyframes medal-glow-bronze {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(205,127,50,.3); }
+  50%       { box-shadow: 0 0 8px 3px rgba(205,127,50,.45); }
+}
+@keyframes medal-shine {
+  0%   { left: -75%; opacity: 0; }
+  20%  { opacity: 1; }
+  60%  { left: 125%; opacity: 1; }
+  61%, 100% { left: 125%; opacity: 0; }
+}
+
 /* Nudge buttons */
 .nudge-row {
   display: flex;

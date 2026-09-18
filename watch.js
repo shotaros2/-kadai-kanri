@@ -353,11 +353,30 @@ function renderMemberChips(a) {
   const memberList = Object.values(members);
   if (memberList.length === 0) return '';
 
+  // 完了時刻でソートしてメダルを割り当て
+  const MEDALS      = ['🥇', '🥈', '🥉'];
+  const MEDAL_CLS   = ['chip-gold', 'chip-silver', 'chip-bronze'];
+  const completedSorted = memberList
+    .filter(m => completions[m.id])
+    .map(m => ({ id: m.id, t: typeof completions[m.id] === 'string' ? new Date(completions[m.id]) : new Date(9e15) }))
+    .sort((a, b) => a.t - b.t);
+  const medalRank = {};
+  completedSorted.forEach((m, i) => { if (i < 3) medalRank[m.id] = i; });
+
   const chips = memberList.map(m => {
-    const done = !!completions[m.id];
-    let cls = done ? 'chip-done' : (status === 'overdue' || status === 'today' ? 'chip-overdue' : 'chip-undone');
-    const isMine = m.id === memberId;
-    const icon = done ? '✅' : (status === 'overdue' ? '🔴' : '⏳');
+    const done    = !!completions[m.id];
+    const rank    = medalRank[m.id];
+    const isMine  = m.id === memberId;
+    let cls, icon;
+    if (rank !== undefined) {
+      cls  = MEDAL_CLS[rank];
+      icon = MEDALS[rank];
+    } else if (done) {
+      cls  = 'chip-done'; icon = '✅';
+    } else {
+      cls  = (status === 'overdue' || status === 'today') ? 'chip-overdue' : 'chip-undone';
+      icon = status === 'overdue' ? '🔴' : '⏳';
+    }
     return `<span class="member-chip ${cls}${isMine ? ' chip-mine' : ''}"
       ${isMine ? `data-toggle-assign="${esc(a.id)}"` : `data-member-id="${esc(m.id)}"`}
       title="${esc(m.name)}">${icon} ${esc(m.name)}</span>`;
@@ -571,8 +590,9 @@ async function toggleMyCompletion(assignmentId) {
   const a    = assignments[assignmentId];
   if (!a) return;
   const done = !!(a.completions || {})[memberId];
+  // 完了時刻を記録（取消時は null）
   await db.collection('groups').doc(groupId).collection('assignments')
-    .doc(assignmentId).update({ [`completions.${memberId}`]: !done });
+    .doc(assignmentId).update({ [`completions.${memberId}`]: done ? null : new Date().toISOString() });
 }
 
 // ── Nudge ─────────────────────────────────────────────────────
