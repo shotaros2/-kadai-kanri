@@ -55,6 +55,10 @@ let unsubMembers     = null;
 let unsubNudges      = null;
 let nudgeQueue       = [];
 let nudgeShowing     = false;
+let deadlineMode     = 'datetime'; // 'datetime' | 'period'
+let countdownTimer   = null;
+
+const PERIOD_END = {1:[9,20],2:[10,20],3:[11,20],4:[12,20],5:[14,10],6:[15,10],7:[16,10],8:[17,10]};
 
 // ── Init ─────────────────────────────────────────────────────
 function getOrCreateMemberId() {
@@ -157,6 +161,8 @@ async function enterGroup(gId, gName, code) {
   document.getElementById('header-group-name').textContent = gName + ' · コード: ' + code;
   showScreen('main');
   subscribeAll();
+  if (countdownTimer) clearInterval(countdownTimer);
+  countdownTimer = setInterval(updateCountdowns, 30000);
 }
 
 // ── Realtime subscriptions ────────────────────────────────────
@@ -225,15 +231,37 @@ function badgeClass(status, type) {
   return prefix + status;
 }
 
-function badgeLabel(status, isoStr) {
+function badgeLabel(status, isoStr, a) {
   if (status === 'done') return '完了';
   if (status === 'overdue') return '期限切れ';
   const d = new Date(isoStr);
+  if (a && a.deadlineMode === 'period' && a.period) {
+    const prefix = status === 'today' ? '今日' : (status === 'tomorrow' ? '明日' : `${d.getMonth()+1}/${d.getDate()}`);
+    return `${prefix} ${a.period}限目`;
+  }
   const pad = n => String(n).padStart(2,'0');
   const t = pad(d.getHours()) + ':' + pad(d.getMinutes());
   if (status === 'today') return '今日 ' + t;
   if (status === 'tomorrow') return '明日 ' + t;
   return (d.getMonth()+1) + '/' + d.getDate() + ' ' + t;
+}
+
+function countdown(isoStr) {
+  const diff = new Date(isoStr) - Date.now();
+  if (diff <= 0) return '';
+  const mins  = Math.floor(diff / 60000);
+  const hours = Math.floor(mins / 60);
+  const days  = Math.floor(hours / 24);
+  if (days >= 7)  return `残り${days}日`;
+  if (days >= 1)  return `残り${days}日${hours % 24}時間`;
+  if (hours >= 1) return `残り${hours}時間${mins % 60}分`;
+  return `残り${mins}分`;
+}
+
+function updateCountdowns() {
+  document.querySelectorAll('.countdown[data-deadline]').forEach(el => {
+    el.textContent = countdown(el.dataset.deadline);
+  });
 }
 
 function getFiltered() {
@@ -267,9 +295,16 @@ function renderMemberChips(a) {
     `<button class="btn-nudge" data-nudge-assign="${esc(a.id)}" data-nudge-to="${esc(m.id)}">📣 ${esc(m.name)}に通知</button>`
   ).join('');
 
+  const doneCount = memberList.filter(m => !!completions[m.id]).length;
+  const pct = memberList.length > 0 ? Math.round(doneCount / memberList.length * 100) : 0;
+
   return `
     <div class="completion-section">
-      <div class="completion-label">完了状況</div>
+      <div class="completion-header">
+        <div class="completion-label">完了状況</div>
+        <div class="completion-rate">${doneCount}/${memberList.length}人</div>
+      </div>
+      <div class="completion-bar"><div class="completion-bar-fill" style="width:${pct}%"></div></div>
       <div class="member-chips">${chips}</div>
       ${nudgeButtons ? `<div class="nudge-row">${nudgeButtons}</div>` : ''}
     </div>`;
@@ -295,13 +330,17 @@ function renderList() {
     const myDone = !!(a.completions || {})[memberId];
     const status = deadlineStatus(a.deadline, myDone);
     const bc = badgeClass(status, a.type);
-    const bl = badgeLabel(status, a.deadline);
+    const bl = badgeLabel(status, a.deadline, a);
+    const cd = (!myDone && status !== 'overdue') ? countdown(a.deadline) : '';
     const typeLabel = a.type === 'exam' ? '📝 テスト' : '📋 課題';
     return `
       <div class="card${myDone ? ' done-card' : ''}" data-id="${esc(a.id)}">
         <div class="card-top">
           <span class="card-subject">${esc(a.subject)}</span>
-          <span class="deadline-badge ${bc}">${bl}</span>
+          <div class="card-deadline-wrap">
+            <span class="deadline-badge ${bc}">${bl}</span>
+            ${cd ? `<span class="countdown" data-deadline="${esc(a.deadline)}">${cd}</span>` : ''}
+          </div>
         </div>
         <div class="card-type-label">${typeLabel}</div>
         ${a.content ? `<div class="card-content">${esc(a.content)}</div>` : ''}
@@ -325,16 +364,24 @@ function openAssignmentModal(id = null) {
   pendingFiles = [];
   const a = id ? assignments[id] : null;
   const type = a ? (a.type || 'assignment') : 'assignment';
+  const mode = a ? (a.deadlineMode || 'datetime') : 'datetime';
   document.getElementById('modal-assignment-title').textContent = id ? '課題を編集' : '課題を追加';
-  document.getElementById('f-subject').value  = a ? a.subject  : '';
-  document.getElementById('f-deadline').value = a ? a.deadline : '';
-  document.getElementById('f-content').value  = a ? a.content  : '';
-  document.getElementById('f-memo').value     = a ? a.memo     : '';
+  document.getElementById('f-subject').value = a ? a.subject : '';
+  document.getElementById('f-content').value = a ? a.content : '';
+  document.getElementById('f-memo').value    = a ? a.memo    : '';
   document.getElementById('file-list').innerHTML = '';
   document.getElementById('existing-files').innerHTML = (a && a.files && a.files.length)
     ? a.files.map(f => `<div class="file-item"><span class="file-item-name">${esc(f.name)}</span></div>`).join('')
     : '';
   setAssignmentType(type);
+  setDeadlineMode(mode);
+  if (mode === 'period' && a) {
+    document.getElementById('f-deadline-date').value = (a.deadline || '').split('T')[0];
+    document.getElementById('f-period').value = String(a.period || 1);
+    document.getElementById('f-deadline').value = '';
+  } else {
+    document.getElementById('f-deadline').value = a ? (a.deadline || '') : '';
+  }
   document.getElementById('modal-assignment').hidden = false;
   document.getElementById('f-subject').focus();
 }
@@ -362,13 +409,40 @@ function setAssignmentType(type) {
   }
 }
 
+function periodToISO(dateStr, period) {
+  const [h, m] = PERIOD_END[+period] || [9, 20];
+  return `${dateStr}T${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:00`;
+}
+
+function setDeadlineMode(mode) {
+  deadlineMode = mode;
+  const isDt = mode === 'datetime';
+  document.querySelectorAll('.deadline-mode-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.mode === mode));
+  const dtField = document.getElementById('f-deadline');
+  const periodFields = document.getElementById('period-mode-fields');
+  dtField.style.display = isDt ? '' : 'none';
+  dtField.required = isDt;
+  periodFields.style.display = isDt ? 'none' : 'flex';
+  document.getElementById('f-deadline-date').required = !isDt;
+}
+
 async function saveAssignment(e) {
   e.preventDefault();
-  const subject  = document.getElementById('f-subject').value.trim();
-  const deadline = document.getElementById('f-deadline').value;
-  const content  = document.getElementById('f-content').value.trim();
-  const memo     = document.getElementById('f-memo').value.trim();
-  const btn      = document.getElementById('btn-assignment-submit');
+  const subject = document.getElementById('f-subject').value.trim();
+  const content = document.getElementById('f-content').value.trim();
+  const memo    = document.getElementById('f-memo').value.trim();
+  const btn     = document.getElementById('btn-assignment-submit');
+
+  let deadline, period = null;
+  if (deadlineMode === 'period') {
+    const dateStr = document.getElementById('f-deadline-date').value;
+    period = +document.getElementById('f-period').value;
+    if (!dateStr) { showToast('日付を入力してください'); return; }
+    deadline = periodToISO(dateStr, period);
+  } else {
+    deadline = document.getElementById('f-deadline').value;
+  }
 
   btn.disabled = true;
   btn.textContent = '保存中…';
@@ -391,6 +465,8 @@ async function saveAssignment(e) {
   const data = {
     subject, deadline, content, memo,
     type: currentType,
+    deadlineMode,
+    period,
     files: [...existingFiles, ...newFiles]
   };
 
@@ -656,6 +732,12 @@ document.addEventListener('DOMContentLoaded', () => {
     tab.classList.add('active');
     currentFilter = tab.dataset.filter;
     renderList();
+  });
+
+  // Deadline mode toggle
+  document.getElementById('deadline-mode-toggle').addEventListener('click', e => {
+    const btn = e.target.closest('.deadline-mode-btn');
+    if (btn) setDeadlineMode(btn.dataset.mode);
   });
 
   // FAB / assignment

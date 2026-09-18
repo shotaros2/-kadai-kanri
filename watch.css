@@ -328,7 +328,6 @@ body {
   font-size: 11px;
   font-weight: 600;
   color: var(--text-sub);
-  margin-bottom: 8px;
   text-transform: uppercase;
   letter-spacing: .5px;
 }
@@ -703,6 +702,82 @@ body {
   animation: spin .6s linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Deadline mode toggle ── */
+.deadline-mode-toggle {
+  display: flex;
+  gap: 4px;
+  background: var(--surface);
+  padding: 4px;
+  border-radius: var(--radius-sm);
+  width: fit-content;
+  margin-bottom: 8px;
+}
+.deadline-mode-btn {
+  border: none;
+  background: none;
+  cursor: pointer;
+  padding: 5px 14px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-sub);
+  transition: background .15s, color .15s;
+  font-family: inherit;
+}
+.deadline-mode-btn.active {
+  background: var(--bg);
+  color: var(--text);
+  box-shadow: var(--shadow);
+}
+#period-mode-fields {
+  display: none;
+  gap: 8px;
+  margin-top: 8px;
+}
+#period-mode-fields input,
+#period-mode-fields select { flex: 1; }
+
+/* ── Countdown ── */
+.card-deadline-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  flex-shrink: 0;
+}
+.countdown {
+  font-size: 11px;
+  color: var(--text-sub);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* ── Completion rate & progress bar ── */
+.completion-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+.completion-rate {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--accent);
+}
+.completion-bar {
+  height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+.completion-bar-fill {
+  height: 100%;
+  background: var(--green);
+  border-radius: 2px;
+  transition: width .4s ease;
+}
 
 /* Mobile */
 @media (max-width: 480px) {

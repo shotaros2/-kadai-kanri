@@ -129,8 +129,25 @@
         <input type="text" id="f-subject" placeholder="例：英語II" required maxlength="40">
       </div>
       <div class="field">
-        <label for="f-deadline" id="label-deadline">締め切り <span class="required">*</span></label>
-        <input type="datetime-local" id="f-deadline" required>
+        <label id="label-deadline">締め切り <span class="required">*</span></label>
+        <div class="deadline-mode-toggle" id="deadline-mode-toggle">
+          <button type="button" class="deadline-mode-btn active" data-mode="datetime">日時</button>
+          <button type="button" class="deadline-mode-btn" data-mode="period">時間割</button>
+        </div>
+        <input type="datetime-local" id="f-deadline" required style="margin-top:8px">
+        <div id="period-mode-fields">
+          <input type="date" id="f-deadline-date">
+          <select id="f-period">
+            <option value="1">1限目（〜9:20）</option>
+            <option value="2">2限目（〜10:20）</option>
+            <option value="3">3限目（〜11:20）</option>
+            <option value="4">4限目（〜12:20）</option>
+            <option value="5">5限目（〜14:10）</option>
+            <option value="6">6限目（〜15:10）</option>
+            <option value="7">7限目（〜16:10）</option>
+            <option value="8">8限目（〜17:10）</option>
+          </select>
+        </div>
       </div>
       <div class="field">
         <label for="f-content" id="label-content">内容</label>
