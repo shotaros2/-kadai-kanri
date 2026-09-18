@@ -23,12 +23,13 @@
 //    }
 // ============================================================
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyCCUgR_rjGJXkT5CTTbg2jw2rymPYyBNDk",
+  authDomain: "kadai-doumei.firebaseapp.com",
+  projectId: "kadai-doumei",
+  storageBucket: "kadai-doumei.firebasestorage.app",
+  messagingSenderId: "238661730604",
+  appId: "1:238661730604:web:7c529567398738839a2c89",
+  measurementId: "G-WGHB74QQYE"
 };
 
 firebase.initializeApp(firebaseConfig);
