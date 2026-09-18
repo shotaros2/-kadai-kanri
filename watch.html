@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>課題同盟</title>
+  <link rel="manifest" href="watch-manifest.json">
+  <meta name="theme-color" content="#6366f1">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="課題同盟">
+  <link rel="stylesheet" href="watch.css">
+</head>
+<body>
+
+<!-- ── Screen: Welcome ── -->
+<div id="screen-welcome" class="screen active">
+  <div class="welcome-wrap">
+    <div class="welcome-logo">🤝</div>
+    <div class="welcome-title">課題同盟</div>
+    <div class="welcome-sub">友達と一緒に課題を管理。誰がまだ終わってないかが一目でわかる。</div>
+
+    <!-- Join group -->
+    <div class="welcome-card" id="card-join">
+      <h2>グループに参加する</h2>
+      <div class="field">
+        <label for="w-name">あなたの名前 <span class="required">*</span></label>
+        <input type="text" id="w-name" placeholder="例：田中たろう" autocomplete="off" maxlength="20">
+      </div>
+      <div class="field">
+        <label for="w-code">招待コード <span class="required">*</span></label>
+        <input type="text" id="w-code" placeholder="例：ABC123" autocomplete="off" maxlength="8" style="text-transform:uppercase;letter-spacing:2px">
+      </div>
+      <button class="btn btn-primary btn-full" id="btn-join">参加する</button>
+      <div class="welcome-divider">または</div>
+      <div style="text-align:center">
+        <button class="link-btn" id="link-create">新しいグループを作る →</button>
+      </div>
+    </div>
+
+    <!-- Create group (hidden initially) -->
+    <div class="welcome-card" id="card-create" style="display:none">
+      <h2>グループを作る</h2>
+      <div class="field">
+        <label for="c-name">あなたの名前 <span class="required">*</span></label>
+        <input type="text" id="c-name" placeholder="例：田中たろう" autocomplete="off" maxlength="20">
+      </div>
+      <div class="field">
+        <label for="c-group">グループ名 <span class="required">*</span></label>
+        <input type="text" id="c-group" placeholder="例：2年B組" autocomplete="off" maxlength="30">
+      </div>
+      <button class="btn btn-primary btn-full" id="btn-create">グループを作る</button>
+      <div class="welcome-divider">または</div>
+      <div style="text-align:center">
+        <button class="link-btn" id="link-join">参加コードを入力する →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Screen: Profile setup ── -->
+<div id="screen-profile" class="screen">
+  <div class="profile-wrap">
+    <h1>連絡先を登録する</h1>
+    <p class="sub">友達から課題の通知が来たとき、すぐ連絡できるようにしておこう。全部任意・後からでも変更できます。</p>
+    <div class="field">
+      <label for="p-email">メールアドレス</label>
+      <input type="email" id="p-email" placeholder="example@gmail.com" autocomplete="email">
+    </div>
+    <div class="field">
+      <label for="p-instagram">Instagram ID</label>
+      <input type="text" id="p-instagram" placeholder="@なしで入力" autocomplete="off" maxlength="30">
+      <div class="field-hint">例：taro_yamada</div>
+    </div>
+    <div class="field">
+      <label for="p-line">LINE ID</label>
+      <input type="text" id="p-line" placeholder="LINE IDを入力" autocomplete="off" maxlength="30">
+    </div>
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <button class="btn btn-secondary" id="btn-profile-skip" style="flex:1">あとで設定する</button>
+      <button class="btn btn-primary" id="btn-profile-save" style="flex:2">保存して始める</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Screen: Main ── -->
+<div id="screen-main" class="screen">
+  <header class="header">
+    <div class="header-left">
+      <div class="header-title">課題同盟</div>
+      <div class="header-group" id="header-group-name"></div>
+    </div>
+    <div class="header-actions">
+      <button class="btn-icon" id="btn-notif" title="通知">🔔</button>
+      <button class="btn-icon" id="btn-code" title="招待コード">🔗</button>
+      <button class="btn-icon" id="btn-my-profile" title="プロフィール">👤</button>
+    </div>
+  </header>
+
+  <main class="main">
+    <div class="filter-tabs" id="filter-tabs">
+      <button class="tab active" data-filter="all">すべて</button>
+      <button class="tab" data-filter="assignment">課題</button>
+      <button class="tab" data-filter="exam">テスト</button>
+      <button class="tab" data-filter="done">完了</button>
+    </div>
+    <div id="loading" class="loading-wrap"><div class="spinner"></div>読み込み中…</div>
+    <div class="list" id="list"></div>
+    <p class="empty" id="empty" hidden>ありません</p>
+  </main>
+
+  <button class="fab" id="btn-add" title="課題を追加">＋</button>
+</div>
+
+<!-- ── Modal: Add/Edit assignment ── -->
+<div class="modal-overlay" id="modal-assignment" hidden>
+  <div class="modal">
+    <h2 class="modal-title" id="modal-assignment-title">課題を追加</h2>
+    <form id="form-assignment">
+      <div class="field">
+        <label>種類 <span class="required">*</span></label>
+        <div class="type-toggle">
+          <button type="button" class="type-btn active" data-type="assignment">課題</button>
+          <button type="button" class="type-btn" data-type="exam">テスト</button>
+        </div>
+      </div>
+      <div class="field">
+        <label for="f-subject">科目名 <span class="required">*</span></label>
+        <input type="text" id="f-subject" placeholder="例：英語II" required maxlength="40">
+      </div>
+      <div class="field">
+        <label for="f-deadline" id="label-deadline">締め切り <span class="required">*</span></label>
+        <input type="datetime-local" id="f-deadline" required>
+      </div>
+      <div class="field">
+        <label for="f-content" id="label-content">内容</label>
+        <textarea id="f-content" rows="3" placeholder="課題の内容や指示を入力"></textarea>
+      </div>
+      <div class="field">
+        <label for="f-memo">メモ</label>
+        <textarea id="f-memo" rows="2" placeholder="補足メモ（参考書のページ数など）"></textarea>
+      </div>
+      <div class="field">
+        <label>ファイル添付（PDF・画像）</label>
+        <div class="file-drop" id="file-drop">
+          <input type="file" id="f-files" multiple accept=".pdf,image/*">
+          📎 タップしてファイルを選択（または長押しでドロップ）
+        </div>
+        <div class="file-list" id="file-list"></div>
+        <div class="file-list" id="existing-files"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" id="btn-assignment-cancel">キャンセル</button>
+        <button type="submit" class="btn btn-primary" id="btn-assignment-submit">保存</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ── Modal: Member profile ── -->
+<div class="modal-overlay" id="modal-member" hidden>
+  <div class="modal profile-modal">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px">
+      <div>
+        <div class="member-avatar-large" id="member-modal-avatar"></div>
+        <div class="member-name-large" id="member-modal-name"></div>
+        <div class="member-stat" id="member-modal-stat"></div>
+      </div>
+      <button class="btn-icon" id="btn-member-close" style="font-size:20px;color:var(--text-sub)">✕</button>
+    </div>
+    <div class="contact-links" id="member-modal-contacts"></div>
+    <button class="btn btn-secondary btn-full" id="btn-member-close2">閉じる</button>
+  </div>
+</div>
+
+<!-- ── Modal: My profile edit ── -->
+<div class="modal-overlay" id="modal-my-profile" hidden>
+  <div class="modal">
+    <h2 class="modal-title">プロフィール編集</h2>
+    <div class="field">
+      <label for="mp-name">名前</label>
+      <input type="text" id="mp-name" maxlength="20">
+    </div>
+    <div class="field">
+      <label for="mp-email">メールアドレス</label>
+      <input type="email" id="mp-email">
+    </div>
+    <div class="field">
+      <label for="mp-instagram">Instagram ID</label>
+      <input type="text" id="mp-instagram" placeholder="@なし" maxlength="30">
+    </div>
+    <div class="field">
+      <label for="mp-line">LINE ID</label>
+      <input type="text" id="mp-line" maxlength="30">
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" id="btn-mp-cancel">キャンセル</button>
+      <button class="btn btn-primary" id="btn-mp-save">保存</button>
+    </div>
+    <div style="margin-top:12px;text-align:center">
+      <button class="link-btn" id="btn-leave" style="color:var(--danger);font-size:13px">このグループから退出する</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Nudge popup ── -->
+<div class="nudge-popup" id="nudge-popup">
+  <button class="nudge-popup-close" id="nudge-popup-close">✕</button>
+  <div class="nudge-popup-title" id="nudge-popup-title"></div>
+  <div id="nudge-popup-body"></div>
+  <div class="nudge-popup-actions" id="nudge-popup-actions"></div>
+</div>
+
+<!-- ── Toast ── -->
+<div class="toast" id="toast"></div>
+
+<!-- Firebase Compat SDK (v10) -->
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-storage-compat.js"></script>
+<script src="watch.js"></script>
+</body>
+</html>
