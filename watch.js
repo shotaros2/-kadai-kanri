@@ -33,8 +33,9 @@ const firebaseConfig = {
 };
 
 firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
+const db      = firebase.firestore();
 const storage = firebase.storage();
+const auth    = firebase.auth();
 
 // ── Local state ──────────────────────────────────────────────
 const LS_MEMBER_ID = 'kadai_watch_memberId';
@@ -83,7 +84,14 @@ function removeGroup(gId) {
 }
 
 async function init() {
-  memberId = getOrCreateMemberId();
+  // 匿名ログイン — Firebase が同一ブラウザで同じ UID を永続化する
+  try {
+    if (!auth.currentUser) await auth.signInAnonymously();
+    memberId = auth.currentUser.uid;
+  } catch {
+    // オフライン等でも動くようUUIDフォールバック
+    memberId = getOrCreateMemberId();
+  }
 
   // Register service worker for PWA
   if ('serviceWorker' in navigator) {
