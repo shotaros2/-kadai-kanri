@@ -28,13 +28,22 @@
         <input type="text" id="w-name" placeholder="例：田中たろう" autocomplete="off" maxlength="20">
       </div>
       <div class="field">
+        <label for="w-email">メールアドレス <span class="required">*</span></label>
+        <input type="email" id="w-email" placeholder="example@gmail.com" autocomplete="email">
+      </div>
+      <div class="field">
+        <label for="w-password">パスワード <span class="required">*</span></label>
+        <input type="password" id="w-password" placeholder="6文字以上" autocomplete="new-password" minlength="6">
+      </div>
+      <div class="field">
         <label for="w-code">招待コード <span class="required">*</span></label>
         <input type="text" id="w-code" placeholder="例：ABC123" autocomplete="off" maxlength="8" style="text-transform:uppercase;letter-spacing:2px">
       </div>
       <button class="btn btn-primary btn-full" id="btn-join">参加する</button>
       <div class="welcome-divider">または</div>
-      <div style="text-align:center">
+      <div style="text-align:center;display:flex;flex-direction:column;gap:8px">
         <button class="link-btn" id="link-create">新しいグループを作る →</button>
+        <button class="link-btn" id="link-login" style="color:var(--text-sub)">別の端末からログイン →</button>
       </div>
     </div>
 
@@ -46,13 +55,41 @@
         <input type="text" id="c-name" placeholder="例：田中たろう" autocomplete="off" maxlength="20">
       </div>
       <div class="field">
+        <label for="c-email">メールアドレス <span class="required">*</span></label>
+        <input type="email" id="c-email" placeholder="example@gmail.com" autocomplete="email">
+      </div>
+      <div class="field">
+        <label for="c-password">パスワード <span class="required">*</span></label>
+        <input type="password" id="c-password" placeholder="6文字以上" autocomplete="new-password" minlength="6">
+      </div>
+      <div class="field">
         <label for="c-group">グループ名 <span class="required">*</span></label>
         <input type="text" id="c-group" placeholder="例：2年B組" autocomplete="off" maxlength="30">
       </div>
       <button class="btn btn-primary btn-full" id="btn-create">グループを作る</button>
       <div class="welcome-divider">または</div>
-      <div style="text-align:center">
+      <div style="text-align:center;display:flex;flex-direction:column;gap:8px">
         <button class="link-btn" id="link-join">参加コードを入力する →</button>
+        <button class="link-btn" id="link-login2" style="color:var(--text-sub)">別の端末からログイン →</button>
+      </div>
+    </div>
+
+    <!-- Login (hidden initially) -->
+    <div class="welcome-card" id="card-login" style="display:none">
+      <h2>ログイン</h2>
+      <p style="font-size:13px;color:var(--text-sub);margin-bottom:16px">別の端末・再インストール後はこちらから</p>
+      <div class="field">
+        <label for="l-email">メールアドレス <span class="required">*</span></label>
+        <input type="email" id="l-email" autocomplete="email">
+      </div>
+      <div class="field">
+        <label for="l-password">パスワード <span class="required">*</span></label>
+        <input type="password" id="l-password" autocomplete="current-password">
+      </div>
+      <button class="btn btn-primary btn-full" id="btn-login">ログイン</button>
+      <div class="welcome-divider">または</div>
+      <div style="text-align:center">
+        <button class="link-btn" id="link-back-join">招待コードで新規登録 →</button>
       </div>
     </div>
   </div>
@@ -63,10 +100,6 @@
   <div class="profile-wrap">
     <h1>連絡先を登録する</h1>
     <p class="sub">友達から課題の通知が来たとき、すぐ連絡できるようにしておこう。全部任意・後からでも変更できます。</p>
-    <div class="field">
-      <label for="p-email">メールアドレス</label>
-      <input type="email" id="p-email" placeholder="example@gmail.com" autocomplete="email">
-    </div>
     <div class="field">
       <label for="p-instagram">Instagram ID</label>
       <input type="text" id="p-instagram" placeholder="@なしで入力" autocomplete="off" maxlength="30">
@@ -199,8 +232,8 @@
       <input type="text" id="mp-name" maxlength="20">
     </div>
     <div class="field">
-      <label for="mp-email">メールアドレス</label>
-      <input type="email" id="mp-email">
+      <label>メールアドレス</label>
+      <div id="mp-email-display" style="font-size:14px;color:var(--text-sub);padding:4px 0"></div>
     </div>
     <div class="field">
       <label for="mp-instagram">Instagram ID</label>
@@ -210,11 +243,21 @@
       <label for="mp-line">LINE ID</label>
       <input type="text" id="mp-line" maxlength="30">
     </div>
+    <details style="margin-bottom:12px">
+      <summary style="font-size:13px;font-weight:600;cursor:pointer;color:var(--text-sub)">パスワードを変更する</summary>
+      <div style="margin-top:10px;display:flex;flex-direction:column;gap:8px">
+        <input type="password" id="mp-new-password" placeholder="新しいパスワード（6文字以上）" minlength="6" autocomplete="new-password"
+          style="border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px 12px;font-size:14px;font-family:inherit">
+        <input type="password" id="mp-new-password2" placeholder="もう一度入力" minlength="6" autocomplete="new-password"
+          style="border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px 12px;font-size:14px;font-family:inherit">
+      </div>
+    </details>
     <div class="modal-footer">
       <button class="btn btn-secondary" id="btn-mp-cancel">キャンセル</button>
       <button class="btn btn-primary" id="btn-mp-save">保存</button>
     </div>
-    <div style="margin-top:12px;text-align:center">
+    <div style="margin-top:12px;text-align:center;display:flex;flex-direction:column;gap:6px">
+      <button class="link-btn" id="btn-logout" style="color:var(--text-sub);font-size:13px">ログアウト</button>
       <button class="link-btn" id="btn-leave" style="color:var(--danger);font-size:13px">このグループから退出する</button>
     </div>
   </div>

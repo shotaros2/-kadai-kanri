@@ -84,19 +84,21 @@ function removeGroup(gId) {
 }
 
 async function init() {
-  // 匿名ログイン — Firebase が同一ブラウザで同じ UID を永続化する
-  try {
-    if (!auth.currentUser) await auth.signInAnonymously();
-    memberId = auth.currentUser.uid;
-  } catch {
-    // オフライン等でも動くようUUIDフォールバック
-    memberId = getOrCreateMemberId();
-  }
-
-  // Register service worker for PWA
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('watch-sw.js').catch(() => {});
   }
+
+  // Firebase Auth の初期化を待つ（セッション永続化）
+  const user = await new Promise(resolve => {
+    const unsub = auth.onAuthStateChanged(u => { unsub(); resolve(u); });
+  });
+
+  if (!user) {
+    showScreen('welcome');
+    return;
+  }
+
+  memberId = user.uid;
 
   // Auto-rejoin last group if saved
   const saved = getSavedGroups();
@@ -114,6 +116,7 @@ async function init() {
     removeGroup(g.groupId);
   }
 
+  // ログイン済みだがグループ未加入 → ウェルカムへ
   showScreen('welcome');
 }
 
@@ -128,14 +131,36 @@ function generateCode() {
   return Math.random().toString(36).substring(2, 8).toUpperCase();
 }
 
-async function createGroup(name, gName) {
+async function registerAndProceed(email, password) {
+  // 既存アカウントのログインまたは新規作成
+  try {
+    if (auth.currentUser) return true; // 既にログイン済み
+    await auth.createUserWithEmailAndPassword(email, password);
+    memberId = auth.currentUser.uid;
+    return true;
+  } catch (err) {
+    if (err.code === 'auth/email-already-in-use') {
+      showToast('このメールアドレスは既に使われています。「別の端末からログイン」をお使いください');
+    } else if (err.code === 'auth/invalid-email') {
+      showToast('メールアドレスの形式が正しくありません');
+    } else if (err.code === 'auth/weak-password') {
+      showToast('パスワードは6文字以上にしてください');
+    } else {
+      showToast('アカウント作成に失敗しました');
+    }
+    return false;
+  }
+}
+
+async function createGroup(name, email, password, gName) {
+  if (!(await registerAndProceed(email, password))) return;
   const code = generateCode();
   const ref = await db.collection('groups').add({
     name: gName, code, createdAt: new Date().toISOString()
   });
   await db.collection('groups').doc(ref.id)
     .collection('members').doc(memberId).set({
-      name, email: '', instagramId: '', lineId: '',
+      name, email, instagramId: '', lineId: '',
       joinedAt: new Date().toISOString()
     });
   saveGroup(ref.id, gName);
@@ -143,7 +168,8 @@ async function createGroup(name, gName) {
   showScreen('profile');
 }
 
-async function joinGroup(name, code) {
+async function joinGroup(name, email, password, code) {
+  if (!(await registerAndProceed(email, password))) return;
   code = code.toUpperCase().trim();
   const snap = await db.collection('groups').where('code', '==', code).limit(1).get();
   if (snap.empty) { showToast('招待コードが見つかりません'); return; }
@@ -154,12 +180,49 @@ async function joinGroup(name, code) {
   const isNew = !memberSnap.exists;
   await db.collection('groups').doc(doc.id)
     .collection('members').doc(memberId).set({
-      name, email: '', instagramId: '', lineId: '',
+      name, email, instagramId: '', lineId: '',
       joinedAt: new Date().toISOString()
     }, { merge: true });
   saveGroup(doc.id, gData.name);
   await enterGroup(doc.id, gData.name, gData.code);
   if (isNew) showScreen('profile');
+}
+
+async function loginExisting(email, password) {
+  try {
+    await auth.signInWithEmailAndPassword(email, password);
+    memberId = auth.currentUser.uid;
+  } catch (err) {
+    if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
+      showToast('メールアドレスまたはパスワードが正しくありません');
+    } else {
+      showToast('ログインに失敗しました');
+    }
+    return;
+  }
+  // グループが保存されていれば自動復帰
+  const saved = getSavedGroups();
+  if (saved.length > 0) {
+    const g = saved[0];
+    const snap = await db.collection('groups').doc(g.groupId).get().catch(() => null);
+    if (snap && snap.exists) {
+      const memberSnap = await db.collection('groups').doc(g.groupId)
+        .collection('members').doc(memberId).get().catch(() => null);
+      if (memberSnap && memberSnap.exists) {
+        await enterGroup(g.groupId, snap.data().name, snap.data().code);
+        return;
+      }
+    }
+    removeGroup(g.groupId);
+  }
+  showToast('ログインしました。招待コードでグループに参加してください');
+  showCardJoin();
+}
+
+function showCardJoin() {
+  document.getElementById('card-join').style.display = 'block';
+  document.getElementById('card-create').style.display = 'none';
+  document.getElementById('card-login').style.display = 'none';
 }
 
 async function enterGroup(gId, gName, code) {
@@ -618,22 +681,39 @@ function openMemberModal(mId) {
 function openMyProfileModal() {
   const me = members[memberId] || {};
   document.getElementById('mp-name').value      = me.name || '';
-  document.getElementById('mp-email').value     = me.email || '';
   document.getElementById('mp-instagram').value = me.instagramId || '';
   document.getElementById('mp-line').value      = me.lineId || '';
+  document.getElementById('mp-email-display').textContent = auth.currentUser ? auth.currentUser.email : '';
+  document.getElementById('mp-new-password').value  = '';
+  document.getElementById('mp-new-password2').value = '';
   document.getElementById('modal-my-profile').hidden = false;
 }
 
 async function saveMyProfile() {
   const name      = document.getElementById('mp-name').value.trim();
-  const email     = document.getElementById('mp-email').value.trim();
   const instagram = document.getElementById('mp-instagram').value.trim().replace(/^@/, '');
   const line      = document.getElementById('mp-line').value.trim();
+  const newPw     = document.getElementById('mp-new-password').value;
+  const newPw2    = document.getElementById('mp-new-password2').value;
   if (!name) { showToast('名前を入力してください'); return; }
+  if (newPw) {
+    if (newPw.length < 6)   { showToast('パスワードは6文字以上にしてください'); return; }
+    if (newPw !== newPw2)   { showToast('パスワードが一致しません'); return; }
+    try {
+      await auth.currentUser.updatePassword(newPw);
+    } catch (err) {
+      if (err.code === 'auth/requires-recent-login') {
+        showToast('パスワード変更には再ログインが必要です。一度ログアウトして再度ログインしてください');
+      } else {
+        showToast('パスワード変更に失敗しました');
+      }
+      return;
+    }
+  }
   await db.collection('groups').doc(groupId).collection('members').doc(memberId)
-    .update({ name, email, instagramId: instagram, lineId: line });
+    .update({ name, instagramId: instagram, lineId: line });
   document.getElementById('modal-my-profile').hidden = true;
-  showToast('プロフィールを更新しました');
+  showToast(newPw ? 'プロフィールとパスワードを更新しました' : 'プロフィールを更新しました');
 }
 
 async function leaveGroup() {
@@ -645,11 +725,10 @@ async function leaveGroup() {
 
 // ── Profile setup screen ──────────────────────────────────────
 async function saveProfile() {
-  const email     = document.getElementById('p-email').value.trim();
   const instagram = document.getElementById('p-instagram').value.trim().replace(/^@/, '');
   const line      = document.getElementById('p-line').value.trim();
   await db.collection('groups').doc(groupId).collection('members').doc(memberId)
-    .update({ email, instagramId: instagram, lineId: line });
+    .update({ instagramId: instagram, lineId: line });
   showScreen('main');
 }
 
@@ -696,29 +775,55 @@ function showToast(msg) {
 document.addEventListener('DOMContentLoaded', () => {
   // Welcome
   document.getElementById('btn-join').addEventListener('click', async () => {
-    const name = document.getElementById('w-name').value.trim();
-    const code = document.getElementById('w-code').value.trim();
-    if (!name) { showToast('名前を入力してください'); return; }
-    if (!code) { showToast('招待コードを入力してください'); return; }
+    const name  = document.getElementById('w-name').value.trim();
+    const email = document.getElementById('w-email').value.trim();
+    const pw    = document.getElementById('w-password').value;
+    const code  = document.getElementById('w-code').value.trim();
+    if (!name)  { showToast('名前を入力してください'); return; }
+    if (!email) { showToast('メールアドレスを入力してください'); return; }
+    if (pw.length < 6) { showToast('パスワードは6文字以上にしてください'); return; }
+    if (!code)  { showToast('招待コードを入力してください'); return; }
     document.getElementById('btn-join').disabled = true;
-    await joinGroup(name, code).finally(() => { document.getElementById('btn-join').disabled = false; });
+    await joinGroup(name, email, pw, code).finally(() => { document.getElementById('btn-join').disabled = false; });
   });
   document.getElementById('btn-create').addEventListener('click', async () => {
     const name  = document.getElementById('c-name').value.trim();
+    const email = document.getElementById('c-email').value.trim();
+    const pw    = document.getElementById('c-password').value;
     const gName = document.getElementById('c-group').value.trim();
     if (!name)  { showToast('名前を入力してください'); return; }
+    if (!email) { showToast('メールアドレスを入力してください'); return; }
+    if (pw.length < 6) { showToast('パスワードは6文字以上にしてください'); return; }
     if (!gName) { showToast('グループ名を入力してください'); return; }
     document.getElementById('btn-create').disabled = true;
-    await createGroup(name, gName).finally(() => { document.getElementById('btn-create').disabled = false; });
+    await createGroup(name, email, pw, gName).finally(() => { document.getElementById('btn-create').disabled = false; });
+  });
+  document.getElementById('btn-login').addEventListener('click', async () => {
+    const email = document.getElementById('l-email').value.trim();
+    const pw    = document.getElementById('l-password').value;
+    if (!email) { showToast('メールアドレスを入力してください'); return; }
+    if (!pw)    { showToast('パスワードを入力してください'); return; }
+    document.getElementById('btn-login').disabled = true;
+    await loginExisting(email, pw).finally(() => { document.getElementById('btn-login').disabled = false; });
   });
   document.getElementById('link-create').addEventListener('click', () => {
     document.getElementById('card-join').style.display = 'none';
     document.getElementById('card-create').style.display = 'block';
+    document.getElementById('card-login').style.display = 'none';
   });
   document.getElementById('link-join').addEventListener('click', () => {
     document.getElementById('card-create').style.display = 'none';
     document.getElementById('card-join').style.display = 'block';
+    document.getElementById('card-login').style.display = 'none';
   });
+  ['link-login', 'link-login2'].forEach(id => {
+    document.getElementById(id).addEventListener('click', () => {
+      document.getElementById('card-join').style.display = 'none';
+      document.getElementById('card-create').style.display = 'none';
+      document.getElementById('card-login').style.display = 'block';
+    });
+  });
+  document.getElementById('link-back-join').addEventListener('click', showCardJoin);
 
   // Profile setup
   document.getElementById('btn-profile-save').addEventListener('click', saveProfile);
@@ -804,6 +909,12 @@ document.addEventListener('DOMContentLoaded', () => {
   // My profile modal
   document.getElementById('btn-mp-cancel').addEventListener('click', () => { document.getElementById('modal-my-profile').hidden = true; });
   document.getElementById('btn-mp-save').addEventListener('click', saveMyProfile);
+  document.getElementById('btn-logout').addEventListener('click', async () => {
+    if (!confirm('ログアウトしますか？')) return;
+    await auth.signOut();
+    localStorage.removeItem(LS_GROUPS);
+    location.reload();
+  });
   document.getElementById('btn-leave').addEventListener('click', leaveGroup);
   document.getElementById('modal-my-profile').addEventListener('click', e => { if (e.target === e.currentTarget) e.currentTarget.hidden = true; });
 
