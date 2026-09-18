@@ -131,7 +131,9 @@ function generateCode() {
   return Math.random().toString(36).substring(2, 8).toUpperCase();
 }
 
-async function registerAndProceed(email, password) {
+async function isValidEmail(e) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e); }
+
+function registerAndProceed(email, password) {
   // 既存アカウントのログインまたは新規作成
   try {
     if (auth.currentUser) return true; // 既にログイン済み
@@ -780,7 +782,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const pw    = document.getElementById('w-password').value;
     const code  = document.getElementById('w-code').value.trim();
     if (!name)  { showToast('名前を入力してください'); return; }
-    if (!email) { showToast('メールアドレスを入力してください'); return; }
+    if (!email || !isValidEmail(email)) { showToast('正しいメールアドレスを入力してください'); return; }
     if (pw.length < 6) { showToast('パスワードは6文字以上にしてください'); return; }
     if (!code)  { showToast('招待コードを入力してください'); return; }
     document.getElementById('btn-join').disabled = true;
@@ -792,7 +794,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const pw    = document.getElementById('c-password').value;
     const gName = document.getElementById('c-group').value.trim();
     if (!name)  { showToast('名前を入力してください'); return; }
-    if (!email) { showToast('メールアドレスを入力してください'); return; }
+    if (!email || !isValidEmail(email)) { showToast('正しいメールアドレスを入力してください'); return; }
     if (pw.length < 6) { showToast('パスワードは6文字以上にしてください'); return; }
     if (!gName) { showToast('グループ名を入力してください'); return; }
     document.getElementById('btn-create').disabled = true;
