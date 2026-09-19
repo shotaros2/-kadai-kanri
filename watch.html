@@ -122,7 +122,7 @@
   <header class="header">
     <div class="header-left">
       <div class="header-title">課題同盟</div>
-      <div class="header-group" id="header-group-name"></div>
+      <button class="header-group-btn" id="header-group-name"></button>
     </div>
     <div class="header-actions">
       <button class="btn-icon" id="btn-notif" title="通知">🔔</button>
@@ -293,6 +293,32 @@
     <path d="M20.5 11C20.5 7.13 16.69 4 12 4S3.5 7.13 3.5 11c0 3.45 3.06 6.34 7.2 6.89.28.06.66.19.76.43.09.22.06.56.03.78l-.12.74c-.04.22-.17.86.75.47.92-.4 4.97-2.93 6.78-5.01 1.73-1.98 2.1-3.31 2.1-4.3z" fill="white"/>
   </symbol>
 </svg>
+
+<!-- ── Modal: Groups ── -->
+<div class="modal-overlay" id="modal-groups" hidden>
+  <div class="modal">
+    <h2 class="modal-title">グループ切り替え</h2>
+    <div id="groups-list" class="groups-list"></div>
+    <hr style="border:none;border-top:1px solid var(--border);margin:16px 0">
+    <div class="field">
+      <label>招待コードで参加</label>
+      <div style="display:flex;gap:8px">
+        <input type="text" id="gm-join-code" placeholder="招待コードを入力" maxlength="6" autocomplete="off" style="flex:1;text-transform:uppercase">
+        <button class="btn btn-primary" id="btn-gm-join">参加</button>
+      </div>
+    </div>
+    <div class="field">
+      <label>新しいグループを作る</label>
+      <div style="display:flex;gap:8px">
+        <input type="text" id="gm-create-name" placeholder="グループ名" maxlength="30" autocomplete="off" style="flex:1">
+        <button class="btn btn-primary" id="btn-gm-create">作成</button>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary btn-full" id="btn-gm-close">閉じる</button>
+    </div>
+  </div>
+</div>
 
 <!-- ── Toast ── -->
 <div class="toast" id="toast"></div>

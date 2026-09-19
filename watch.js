@@ -75,9 +75,9 @@ function getSavedGroups() {
   try { return JSON.parse(localStorage.getItem(LS_GROUPS) || '[]'); } catch { return []; }
 }
 
-function saveGroup(gId, name) {
+function saveGroup(gId, name, code) {
   const groups = getSavedGroups().filter(g => g.groupId !== gId);
-  groups.unshift({ groupId: gId, groupName: name });
+  groups.unshift({ groupId: gId, groupName: name, code: code || '' });
   localStorage.setItem(LS_GROUPS, JSON.stringify(groups.slice(0, 10)));
 }
 
@@ -166,7 +166,7 @@ async function createGroup(name, email, password, gName) {
       name, email, instagramId: '', lineId: '',
       joinedAt: new Date().toISOString()
     });
-  saveGroup(ref.id, gName);
+  saveGroup(ref.id, gName, code);
   await enterGroup(ref.id, gName, code);
   showScreen('profile');
 }
@@ -186,7 +186,7 @@ async function joinGroup(name, email, password, code) {
       name, email, instagramId: '', lineId: '',
       joinedAt: new Date().toISOString()
     }, { merge: true });
-  saveGroup(doc.id, gData.name);
+  saveGroup(doc.id, gData.name, gData.code);
   await enterGroup(doc.id, gData.name, gData.code);
   if (isNew) showScreen('profile');
 }
@@ -229,10 +229,20 @@ function showCardJoin() {
 }
 
 async function enterGroup(gId, gName, code) {
+  // Tear down existing subscriptions before switching
+  if (unsubAssignments) { unsubAssignments(); unsubAssignments = null; }
+  if (unsubMembers)     { unsubMembers();     unsubMembers = null; }
+  if (unsubNudges)      { unsubNudges();      unsubNudges = null; }
+  if (unsubPresence)    { unsubPresence();    unsubPresence = null; }
+  assignments = {};
+  members = {};
+  presenceData = {};
+
   groupId   = gId;
   groupName = gName;
   groupCode = code;
-  document.getElementById('header-group-name').textContent = gName + ' · コード: ' + code;
+  const btn = document.getElementById('header-group-name');
+  btn.textContent = gName + ' ▾';
   showScreen('main');
   subscribeAll();
   if (countdownTimer) clearInterval(countdownTimer);
@@ -885,6 +895,85 @@ function showToast(msg) {
   toastTimer = setTimeout(() => el.classList.remove('show'), 2800);
 }
 
+// ── Multi-group management ────────────────────────────────────
+function openGroupsModal() {
+  const groups = getSavedGroups();
+  const listEl = document.getElementById('groups-list');
+  listEl.innerHTML = groups.length === 0
+    ? '<p style="color:var(--text-sub);font-size:14px;text-align:center">参加中のグループはありません</p>'
+    : groups.map(g => `
+        <div class="group-item${g.groupId === groupId ? ' group-item-active' : ''}">
+          <div>
+            <div class="group-item-name">${esc(g.groupName)}</div>
+            <div class="group-item-code">コード: ${esc(g.code || '')}</div>
+          </div>
+          ${g.groupId === groupId
+            ? '<span class="group-item-current">使用中</span>'
+            : `<button class="btn btn-secondary" style="font-size:13px;padding:6px 12px" data-switch-gid="${g.groupId}">切り替え</button>`
+          }
+        </div>`).join('');
+  listEl.addEventListener('click', e => {
+    const btn = e.target.closest('[data-switch-gid]');
+    if (btn) switchToGroup(btn.dataset.switchGid);
+  }, { once: true });
+  document.getElementById('modal-groups').hidden = false;
+}
+
+async function switchToGroup(gId) {
+  document.getElementById('modal-groups').hidden = true;
+  const snap = await db.collection('groups').doc(gId).get().catch(() => null);
+  if (!snap || !snap.exists) { showToast('グループが見つかりません'); return; }
+  saveGroup(gId, snap.data().name, snap.data().code);
+  await enterGroup(gId, snap.data().name, snap.data().code);
+}
+
+async function joinGroupFromModal() {
+  const code = document.getElementById('gm-join-code').value.toUpperCase().trim();
+  if (!code) { showToast('招待コードを入力してください'); return; }
+  const snap = await db.collection('groups').where('code', '==', code).limit(1).get().catch(() => null);
+  if (!snap || snap.empty) { showToast('招待コードが正しくありません'); return; }
+  const groupSnap = snap.docs[0];
+  const gId = groupSnap.id;
+  const gName = groupSnap.data().name;
+  const memberSnap = await db.collection('groups').doc(gId).collection('members').doc(memberId).get().catch(() => null);
+  if (!memberSnap || !memberSnap.exists) {
+    const mySnap = groupId
+      ? await db.collection('groups').doc(groupId).collection('members').doc(memberId).get().catch(() => null)
+      : null;
+    const myData = mySnap && mySnap.exists ? mySnap.data() : { name: '名前未設定', email: '', instagramId: '', lineId: '' };
+    await db.collection('groups').doc(gId).collection('members').doc(memberId).set({
+      name: myData.name, email: myData.email || '',
+      instagramId: myData.instagramId || '', lineId: myData.lineId || '',
+      joinedAt: new Date().toISOString()
+    });
+  }
+  saveGroup(gId, gName, code);
+  document.getElementById('gm-join-code').value = '';
+  document.getElementById('modal-groups').hidden = true;
+  await enterGroup(gId, gName, code);
+}
+
+async function createGroupFromModal() {
+  const name = document.getElementById('gm-create-name').value.trim();
+  if (!name) { showToast('グループ名を入力してください'); return; }
+  const code = generateCode();
+  const ref = await db.collection('groups').add({ name, code, createdAt: new Date().toISOString() });
+  const mySnap = groupId
+    ? await db.collection('groups').doc(groupId).collection('members').doc(memberId).get().catch(() => null)
+    : null;
+  const myData = mySnap && mySnap.exists ? mySnap.data() : { name: '名前未設定', email: '', instagramId: '', lineId: '' };
+  await db.collection('groups').doc(ref.id).collection('members').doc(memberId).set({
+    name: myData.name, email: myData.email || '',
+    instagramId: myData.instagramId || '', lineId: myData.lineId || '',
+    joinedAt: new Date().toISOString()
+  });
+  saveGroup(ref.id, name, code);
+  document.getElementById('gm-create-name').value = '';
+  document.getElementById('modal-groups').hidden = true;
+  await enterGroup(ref.id, name, code);
+  showToast('グループを作成しました。コード: ' + code);
+}
+
 // ── Event wiring ──────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   // Welcome
@@ -952,8 +1041,17 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btn-profile-skip').addEventListener('click', () => showScreen('main'));
 
   // Header
+  document.getElementById('header-group-name').addEventListener('click', openGroupsModal);
   document.getElementById('btn-code').addEventListener('click', copyGroupCode);
   document.getElementById('btn-my-profile').addEventListener('click', openMyProfileModal);
+
+  // Groups modal
+  document.getElementById('btn-gm-close').addEventListener('click', () => { document.getElementById('modal-groups').hidden = true; });
+  document.getElementById('modal-groups').addEventListener('click', e => { if (e.target === e.currentTarget) e.currentTarget.hidden = true; });
+  document.getElementById('btn-gm-join').addEventListener('click', joinGroupFromModal);
+  document.getElementById('btn-gm-create').addEventListener('click', createGroupFromModal);
+  document.getElementById('gm-join-code').addEventListener('keydown', e => { if (e.key === 'Enter') joinGroupFromModal(); });
+  document.getElementById('gm-create-name').addEventListener('keydown', e => { if (e.key === 'Enter') createGroupFromModal(); });
   document.getElementById('btn-notif').addEventListener('click', () => {
     // Mark all nudges read by showing queue
     processNudgeQueue();
