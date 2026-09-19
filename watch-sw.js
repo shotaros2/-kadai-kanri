@@ -1,5 +1,5 @@
 // Service Worker for 課題同盟 PWA
-const CACHE = 'kadai-doumei-v4';
+const CACHE = 'kadai-doumei-v5';
 const PRECACHE = ['watch.html', 'watch.js', 'watch.css', 'watch-manifest.json'];
 
 self.addEventListener('install', e => {

@@ -58,6 +58,9 @@ let nudgeQueue       = [];
 let nudgeShowing     = false;
 let deadlineMode     = 'datetime'; // 'datetime' | 'period'
 let countdownTimer   = null;
+let presenceData     = {};  // { [memberId]: { lastSeen: ISO } }
+let presenceTimer    = null;
+let unsubPresence    = null;
 
 const DEFAULT_PERIOD_END = {1:[9,20],2:[10,20],3:[11,20],4:[12,20],5:[14,10],6:[15,10],7:[16,10],8:[17,10]};
 let PERIOD_END = (() => {
@@ -238,6 +241,62 @@ async function enterGroup(gId, gName, code) {
   subscribeAll();
   if (countdownTimer) clearInterval(countdownTimer);
   countdownTimer = setInterval(updateCountdowns, 30000);
+  updatePresence();
+  if (presenceTimer) clearInterval(presenceTimer);
+  presenceTimer = setInterval(updatePresence, 60000);
+  window.addEventListener('beforeunload', updatePresence);
+}
+
+// ── Presence ─────────────────────────────────────────────────
+const PRESENCE_ONLINE_MS = 3 * 60 * 1000; // 3分以内 = オンライン
+
+function updatePresence() {
+  if (!groupId || !memberId) return;
+  db.collection('groups').doc(groupId).collection('presence').doc(memberId)
+    .set({ lastSeen: new Date().toISOString(), name: (members[memberId]?.name || '') }, { merge: true })
+    .catch(() => {});
+}
+
+function isOnline(lastSeen) {
+  if (!lastSeen) return false;
+  return (Date.now() - new Date(lastSeen).getTime()) < PRESENCE_ONLINE_MS;
+}
+
+function avatarColor(name) {
+  const colors = ['#6366f1','#ec4899','#f59e0b','#10b981','#3b82f6','#8b5cf6','#ef4444','#06b6d4'];
+  let h = 0;
+  for (let i = 0; i < (name||'').length; i++) h = (h * 31 + name.charCodeAt(i)) & 0xffffffff;
+  return colors[Math.abs(h) % colors.length];
+}
+
+function renderPresenceStrip() {
+  const strip = document.getElementById('presence-strip');
+  if (!strip) return;
+  const memberList = Object.values(members);
+  if (memberList.length === 0) { strip.innerHTML = ''; return; }
+
+  const onlineCount = memberList.filter(m => isOnline(presenceData[m.id]?.lastSeen)).length;
+
+  strip.innerHTML = `
+    <div class="presence-label">
+      <span class="presence-count">${onlineCount}人がオンライン</span>
+    </div>
+    <div class="presence-avatars">
+      ${memberList.map(m => {
+        const online = isOnline(presenceData[m.id]?.lastSeen);
+        const initial = (m.name || '?')[0];
+        const isMine = m.id === memberId;
+        return `<div class="presence-avatar-wrap${isMine ? ' presence-mine' : ''}" data-mid="${m.id}" title="${esc(m.name)}">
+          <div class="presence-avatar" style="background:${avatarColor(m.name)}">${esc(initial)}</div>
+          <div class="presence-dot ${online ? 'presence-online' : 'presence-offline'}"></div>
+          <div class="presence-name">${esc(m.name)}</div>
+        </div>`;
+      }).join('')}
+    </div>`;
+
+  strip.querySelectorAll('.presence-avatar-wrap').forEach(el => {
+    el.addEventListener('click', () => showMemberModal(el.dataset.mid));
+  });
 }
 
 // ── Realtime subscriptions ────────────────────────────────────
@@ -245,6 +304,7 @@ function subscribeAll() {
   if (unsubMembers) unsubMembers();
   if (unsubAssignments) unsubAssignments();
   if (unsubNudges) unsubNudges();
+  if (unsubPresence) unsubPresence();
 
   unsubMembers = db.collection('groups').doc(groupId).collection('members')
     .onSnapshot(snap => {
@@ -253,6 +313,16 @@ function subscribeAll() {
         else members[c.doc.id] = { id: c.doc.id, ...c.doc.data() };
       });
       renderList();
+      renderPresenceStrip();
+    });
+
+  unsubPresence = db.collection('groups').doc(groupId).collection('presence')
+    .onSnapshot(snap => {
+      snap.docChanges().forEach(c => {
+        if (c.type === 'removed') delete presenceData[c.doc.id];
+        else presenceData[c.doc.id] = c.doc.data();
+      });
+      renderPresenceStrip();
     });
 
   unsubAssignments = db.collection('groups').doc(groupId).collection('assignments')

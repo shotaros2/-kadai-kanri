@@ -218,6 +218,75 @@ body {
 }
 
 /* ── Filter tabs ── */
+/* ── Presence strip ── */
+.presence-strip {
+  margin-bottom: 12px;
+}
+.presence-label {
+  margin-bottom: 8px;
+}
+.presence-count {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-sub);
+  letter-spacing: .3px;
+}
+.presence-avatars {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: none;
+}
+.presence-avatars::-webkit-scrollbar { display: none; }
+.presence-avatar-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  flex-shrink: 0;
+  position: relative;
+}
+.presence-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: 700;
+  font-size: 16px;
+}
+.presence-mine .presence-avatar {
+  box-shadow: 0 0 0 2.5px var(--accent);
+}
+.presence-dot {
+  position: absolute;
+  bottom: 18px;
+  right: 0;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  border: 2px solid var(--bg);
+}
+.presence-online  { background: #22c55e; animation: presence-pulse 2s ease-in-out infinite; }
+.presence-offline { background: #d1d5db; }
+@keyframes presence-pulse {
+  0%,100% { box-shadow: 0 0 0 0 rgba(34,197,94,.4); }
+  50%      { box-shadow: 0 0 0 4px rgba(34,197,94,0); }
+}
+.presence-name {
+  font-size: 11px;
+  color: var(--text-sub);
+  text-align: center;
+  max-width: 44px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .filter-tabs {
   display: flex;
   gap: 4px;
