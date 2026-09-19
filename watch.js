@@ -131,9 +131,9 @@ function generateCode() {
   return Math.random().toString(36).substring(2, 8).toUpperCase();
 }
 
-async function isValidEmail(e) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e); }
+function isValidEmail(e) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e); }
 
-function registerAndProceed(email, password) {
+async function registerAndProceed(email, password) {
   // 既存アカウントのログインまたは新規作成
   try {
     if (auth.currentUser) return true; // 既にログイン済み
