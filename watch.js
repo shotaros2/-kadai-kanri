@@ -282,11 +282,14 @@ function renderPresenceStrip() {
         const online = isOnline(presenceData[m.id]?.lastSeen);
         const initial = (m.name || '?')[0];
         const isMine = m.id === memberId;
+        const gid = m.id.replace(/[^a-z0-9]/gi, '').slice(-6);
+        const igSvg = `<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="ig${gid}" x1="0" y1="1" x2="1" y2="0"><stop offset="0%" stop-color="#f9ce34"/><stop offset="35%" stop-color="#ee2a7b"/><stop offset="100%" stop-color="#6228d7"/></linearGradient></defs><rect width="24" height="24" rx="6" fill="url(#ig${gid})"/><rect x="6.5" y="6.5" width="11" height="11" rx="3" fill="none" stroke="white" stroke-width="1.8"/><circle cx="12" cy="12" r="3" fill="none" stroke="white" stroke-width="1.8"/><circle cx="16.3" cy="7.7" r="1.1" fill="white"/></svg>`;
+        const lineSvg = `<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><rect width="24" height="24" rx="6" fill="#06C755"/><path d="M20.5 11C20.5 7.13 16.69 4 12 4S3.5 7.13 3.5 11c0 3.45 3.06 6.34 7.2 6.89.28.06.66.19.76.43.09.22.06.56.03.78l-.12.74c-.04.22-.17.86.75.47.92-.4 4.97-2.93 6.78-5.01 1.73-1.98 2.1-3.31 2.1-4.3z" fill="white"/></svg>`;
         const igLink = m.instagramId
-          ? `<a class="presence-social-link" href="https://instagram.com/${esc(m.instagramId)}" target="_blank" rel="noopener" title="@${esc(m.instagramId)}" onclick="event.stopPropagation()"><svg width="24" height="24" aria-hidden="true"><use href="#icon-instagram"/></svg></a>`
+          ? `<a class="presence-social-link" href="https://instagram.com/${esc(m.instagramId)}" target="_blank" rel="noopener" title="@${esc(m.instagramId)}" onclick="event.stopPropagation()">${igSvg}</a>`
           : '';
         const lineLink = m.lineId
-          ? `<a class="presence-social-link" href="https://line.me/ti/p/${encodeURIComponent(m.lineId)}" target="_blank" rel="noopener" title="LINE: ${esc(m.lineId)}" onclick="event.stopPropagation()"><svg width="24" height="24" aria-hidden="true"><use href="#icon-line"/></svg></a>`
+          ? `<a class="presence-social-link" href="https://line.me/ti/p/${encodeURIComponent(m.lineId)}" target="_blank" rel="noopener" title="LINE: ${esc(m.lineId)}" onclick="event.stopPropagation()">${lineSvg}</a>`
           : '';
         const hasLinks = igLink || lineLink;
         return `<div class="presence-avatar-wrap${isMine ? ' presence-mine' : ''}" data-mid="${m.id}" title="${esc(m.name)}">
