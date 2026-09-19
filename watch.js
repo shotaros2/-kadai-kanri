@@ -804,9 +804,15 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!name)  { showToast('名前を入力してください'); return; }
     if (!email || !isValidEmail(email)) { showToast('正しいメールアドレスを入力してください'); return; }
     if (pw.length < 6) { showToast('パスワードは6文字以上にしてください'); return; }
-    if (!code)  { showToast('招待コードを入力してください'); return; }
     document.getElementById('btn-join').disabled = true;
-    await joinGroup(name, email, pw, code).finally(() => { document.getElementById('btn-join').disabled = false; });
+    if (!code) {
+      // 招待コードなし → アカウントだけ作成して待機
+      if (!(await registerAndProceed(email, pw).finally(() => { document.getElementById('btn-join').disabled = false; }))) return;
+      showToast('アカウントを作成しました。招待コードを入力してグループに参加してください');
+      document.getElementById('w-name').value = name;
+    } else {
+      await joinGroup(name, email, pw, code).finally(() => { document.getElementById('btn-join').disabled = false; });
+    }
   });
   document.getElementById('btn-create').addEventListener('click', async () => {
     const name  = document.getElementById('c-name').value.trim();
