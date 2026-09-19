@@ -787,9 +787,17 @@ function openMyProfileModal() {
   document.getElementById('modal-my-profile').hidden = false;
 }
 
+function sanitizeSocialId(raw, type) {
+  let s = (raw || '').trim();
+  if (type === 'instagram') {
+    s = s.replace(/^@/, '').replace(/^https?:\/\/(www\.)?instagram\.com\/?/, '').replace(/\/$/, '');
+  }
+  return s;
+}
+
 async function saveMyProfile() {
   const name      = document.getElementById('mp-name').value.trim();
-  const instagram = document.getElementById('mp-instagram').value.trim().replace(/^@/, '');
+  const instagram = sanitizeSocialId(document.getElementById('mp-instagram').value, 'instagram');
   const line      = document.getElementById('mp-line').value.trim();
   const newPw     = document.getElementById('mp-new-password').value;
   const newPw2    = document.getElementById('mp-new-password2').value;
@@ -823,7 +831,7 @@ async function leaveGroup() {
 
 // ── Profile setup screen ──────────────────────────────────────
 async function saveProfile() {
-  const instagram = document.getElementById('p-instagram').value.trim().replace(/^@/, '');
+  const instagram = sanitizeSocialId(document.getElementById('p-instagram').value, 'instagram');
   const line      = document.getElementById('p-line').value.trim();
   await db.collection('groups').doc(groupId).collection('members').doc(memberId)
     .update({ instagramId: instagram, lineId: line });
