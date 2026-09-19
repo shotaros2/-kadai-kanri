@@ -106,18 +106,16 @@ async function init() {
 
   // Auto-rejoin last group if saved
   const saved = getSavedGroups();
-  if (saved.length > 0) {
-    const g = saved[0];
+  for (const g of saved) {
     const snap = await db.collection('groups').doc(g.groupId).get().catch(() => null);
-    if (snap && snap.exists) {
-      const memberSnap = await db.collection('groups').doc(g.groupId)
-        .collection('members').doc(memberId).get().catch(() => null);
-      if (memberSnap && memberSnap.exists) {
-        await enterGroup(g.groupId, snap.data().name, snap.data().code);
-        return;
-      }
-    }
-    removeGroup(g.groupId);
+    if (snap === null) continue;                  // ネットワークエラー → 消さずにスキップ
+    if (!snap.exists) { removeGroup(g.groupId); continue; } // グループ自体が削除済み
+    const memberSnap = await db.collection('groups').doc(g.groupId)
+      .collection('members').doc(memberId).get().catch(() => null);
+    if (memberSnap === null) continue;            // ネットワークエラー → 消さずにスキップ
+    if (!memberSnap.exists) { removeGroup(g.groupId); continue; } // 退出済み
+    await enterGroup(g.groupId, snap.data().name, snap.data().code);
+    return;
   }
 
   // ログイン済みだがグループ未加入 → ウェルカムへ
