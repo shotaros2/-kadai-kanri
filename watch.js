@@ -283,15 +283,17 @@ function renderPresenceStrip() {
         const initial = (m.name || '?')[0];
         const isMine = m.id === memberId;
         const igLink = m.instagramId
-          ? `<a class="presence-social-link" href="https://instagram.com/${esc(m.instagramId)}" target="_blank" rel="noopener" title="Instagram: @${esc(m.instagramId)}" onclick="event.stopPropagation()">📸</a>`
+          ? `<a class="presence-social-link" href="https://instagram.com/${esc(m.instagramId)}" target="_blank" rel="noopener" title="@${esc(m.instagramId)}" onclick="event.stopPropagation()"><svg width="24" height="24" aria-hidden="true"><use href="#icon-instagram"/></svg></a>`
           : '';
         const lineLink = m.lineId
-          ? `<a class="presence-social-link" href="https://line.me/ti/p/${encodeURIComponent(m.lineId)}" target="_blank" rel="noopener" title="LINE: ${esc(m.lineId)}" onclick="event.stopPropagation()">💬</a>`
+          ? `<a class="presence-social-link" href="https://line.me/ti/p/${encodeURIComponent(m.lineId)}" target="_blank" rel="noopener" title="LINE: ${esc(m.lineId)}" onclick="event.stopPropagation()"><svg width="24" height="24" aria-hidden="true"><use href="#icon-line"/></svg></a>`
           : '';
         const hasLinks = igLink || lineLink;
         return `<div class="presence-avatar-wrap${isMine ? ' presence-mine' : ''}" data-mid="${m.id}" title="${esc(m.name)}">
-          <div class="presence-avatar" style="background:${avatarColor(m.name)}">${esc(initial)}</div>
-          <div class="presence-dot ${online ? 'presence-online' : 'presence-offline'}"></div>
+          <div class="presence-avatar-ring">
+            <div class="presence-avatar" style="background:${avatarColor(m.name)}">${esc(initial)}</div>
+            <div class="presence-dot ${online ? 'presence-online' : 'presence-offline'}"></div>
+          </div>
           <div class="presence-name">${esc(m.name)}</div>
           ${hasLinks ? `<div class="presence-social">${igLink}${lineLink}</div>` : ''}
         </div>`;

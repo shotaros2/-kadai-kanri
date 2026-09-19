@@ -248,6 +248,12 @@ body {
   flex-shrink: 0;
   position: relative;
 }
+.presence-avatar-ring {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+}
 .presence-avatar {
   width: 40px;
   height: 40px;
@@ -264,8 +270,8 @@ body {
 }
 .presence-dot {
   position: absolute;
-  bottom: 18px;
-  right: 0;
+  bottom: 1px;
+  right: 1px;
   width: 11px;
   height: 11px;
   border-radius: 50%;
@@ -290,15 +296,17 @@ body {
   display: flex;
   gap: 4px;
   justify-content: center;
+  margin-top: 2px;
 }
 .presence-social-link {
-  font-size: 14px;
-  line-height: 1;
+  display: inline-flex;
+  border-radius: 6px;
   text-decoration: none;
-  opacity: .85;
+  opacity: .9;
   transition: opacity .15s, transform .15s;
+  line-height: 1;
 }
-.presence-social-link:hover { opacity: 1; transform: scale(1.2); }
+.presence-social-link:hover { opacity: 1; transform: scale(1.15); }
 
 .filter-tabs {
   display: flex;
