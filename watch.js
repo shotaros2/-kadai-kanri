@@ -243,7 +243,7 @@ async function enterGroup(gId, gName, code) {
   groupName = gName;
   groupCode = code;
   const btn = document.getElementById('header-group-name');
-  btn.textContent = gName + ' ▾';
+  btn.textContent = '⊞ ' + gName + ' ▾';
   showScreen('main');
   subscribeAll();
   if (countdownTimer) clearInterval(countdownTimer);
