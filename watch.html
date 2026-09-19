@@ -172,8 +172,16 @@
         <input type="datetime-local" id="f-deadline" required style="margin-top:8px">
         <div id="period-mode-fields">
           <input type="date" id="f-deadline-date">
-          <select id="f-period"></select>
-          <button type="button" id="btn-period-settings" class="link-btn" style="font-size:12px;color:var(--text-sub);margin-top:4px">⚙ 時間割の終了時刻を設定</button>
+          <select id="f-period">
+            <option value="1">1限目（〜9:20）</option>
+            <option value="2">2限目（〜10:20）</option>
+            <option value="3">3限目（〜11:20）</option>
+            <option value="4">4限目（〜12:20）</option>
+            <option value="5">5限目（〜14:10）</option>
+            <option value="6">6限目（〜15:10）</option>
+            <option value="7">7限目（〜16:10）</option>
+            <option value="8">8限目（〜17:10）</option>
+          </select>
         </div>
       </div>
       <div class="field">
@@ -263,34 +271,6 @@
   <div class="nudge-popup-title" id="nudge-popup-title"></div>
   <div id="nudge-popup-body"></div>
   <div class="nudge-popup-actions" id="nudge-popup-actions"></div>
-</div>
-
-<!-- ── Modal: Period Settings ── -->
-<div class="modal-overlay" id="modal-period-settings" hidden>
-  <div class="modal">
-    <h2 class="modal-title">時間割設定</h2>
-    <p style="font-size:13px;color:var(--text-sub);margin-bottom:16px">各時限の終了時刻を設定します（このデバイスに保存）</p>
-    <div style="display:flex;flex-direction:column;gap:10px">
-      <div style="display:grid;grid-template-columns:56px auto 1fr;align-items:center;gap:8px;font-size:13px;color:var(--text-sub);font-weight:600;padding-bottom:4px;border-bottom:1px solid var(--border)">
-        <span>時限</span><span></span><span>終了時刻</span>
-      </div>
-      <div style="display:grid;grid-template-columns:56px auto 1fr;align-items:center;gap:8px"><span style="font-size:14px">1限目</span><span style="color:var(--text-sub);font-size:13px">〜</span><input type="time" id="ps-1" class="period-time-input"></div>
-      <div style="display:grid;grid-template-columns:56px auto 1fr;align-items:center;gap:8px"><span style="font-size:14px">2限目</span><span style="color:var(--text-sub);font-size:13px">〜</span><input type="time" id="ps-2" class="period-time-input"></div>
-      <div style="display:grid;grid-template-columns:56px auto 1fr;align-items:center;gap:8px"><span style="font-size:14px">3限目</span><span style="color:var(--text-sub);font-size:13px">〜</span><input type="time" id="ps-3" class="period-time-input"></div>
-      <div style="display:grid;grid-template-columns:56px auto 1fr;align-items:center;gap:8px"><span style="font-size:14px">4限目</span><span style="color:var(--text-sub);font-size:13px">〜</span><input type="time" id="ps-4" class="period-time-input"></div>
-      <div style="display:grid;grid-template-columns:56px auto 1fr;align-items:center;gap:8px"><span style="font-size:14px">5限目</span><span style="color:var(--text-sub);font-size:13px">〜</span><input type="time" id="ps-5" class="period-time-input"></div>
-      <div style="display:grid;grid-template-columns:56px auto 1fr;align-items:center;gap:8px"><span style="font-size:14px">6限目</span><span style="color:var(--text-sub);font-size:13px">〜</span><input type="time" id="ps-6" class="period-time-input"></div>
-      <div style="display:grid;grid-template-columns:56px auto 1fr;align-items:center;gap:8px"><span style="font-size:14px">7限目</span><span style="color:var(--text-sub);font-size:13px">〜</span><input type="time" id="ps-7" class="period-time-input"></div>
-      <div style="display:grid;grid-template-columns:56px auto 1fr;align-items:center;gap:8px"><span style="font-size:14px">8限目</span><span style="color:var(--text-sub);font-size:13px">〜</span><input type="time" id="ps-8" class="period-time-input"></div>
-    </div>
-    <div style="margin-top:12px;text-align:center">
-      <button type="button" class="link-btn" id="btn-period-settings-reset" style="font-size:12px;color:var(--text-sub)">デフォルトに戻す</button>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-secondary" id="btn-period-settings-cancel">キャンセル</button>
-      <button class="btn btn-primary" id="btn-period-settings-save">保存</button>
-    </div>
-  </div>
 </div>
 
 <!-- ── Toast ── -->
