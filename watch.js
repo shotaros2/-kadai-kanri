@@ -839,7 +839,9 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('card-login').style.display = 'none';
   });
   ['link-login', 'link-login2'].forEach(id => {
-    document.getElementById(id).addEventListener('click', () => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('click', () => {
       document.getElementById('card-join').style.display = 'none';
       document.getElementById('card-create').style.display = 'none';
       document.getElementById('card-login').style.display = 'block';
