@@ -286,6 +286,19 @@ body {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.presence-social {
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+}
+.presence-social-link {
+  font-size: 14px;
+  line-height: 1;
+  text-decoration: none;
+  opacity: .85;
+  transition: opacity .15s, transform .15s;
+}
+.presence-social-link:hover { opacity: 1; transform: scale(1.2); }
 
 .filter-tabs {
   display: flex;

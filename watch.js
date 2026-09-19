@@ -286,10 +286,18 @@ function renderPresenceStrip() {
         const online = isOnline(presenceData[m.id]?.lastSeen);
         const initial = (m.name || '?')[0];
         const isMine = m.id === memberId;
+        const igLink = m.instagramId
+          ? `<a class="presence-social-link" href="https://instagram.com/${esc(m.instagramId)}" target="_blank" rel="noopener" title="Instagram: @${esc(m.instagramId)}" onclick="event.stopPropagation()">📸</a>`
+          : '';
+        const lineLink = m.lineId
+          ? `<a class="presence-social-link" href="https://line.me/ti/p/${encodeURIComponent(m.lineId)}" target="_blank" rel="noopener" title="LINE: ${esc(m.lineId)}" onclick="event.stopPropagation()">💬</a>`
+          : '';
+        const hasLinks = igLink || lineLink;
         return `<div class="presence-avatar-wrap${isMine ? ' presence-mine' : ''}" data-mid="${m.id}" title="${esc(m.name)}">
           <div class="presence-avatar" style="background:${avatarColor(m.name)}">${esc(initial)}</div>
           <div class="presence-dot ${online ? 'presence-online' : 'presence-offline'}"></div>
           <div class="presence-name">${esc(m.name)}</div>
+          ${hasLinks ? `<div class="presence-social">${igLink}${lineLink}</div>` : ''}
         </div>`;
       }).join('')}
     </div>`;
