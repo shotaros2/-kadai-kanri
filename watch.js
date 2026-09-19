@@ -113,6 +113,7 @@ async function init() {
       .collection('members').doc(memberId).get().catch(() => null);
     if (memberSnap === null) continue;            // ネットワークエラー → 消さずにスキップ
     if (!memberSnap.exists) { removeGroup(g.groupId); continue; } // 退出済み
+    saveGroup(g.groupId, snap.data().name, snap.data().code); // refresh code in localStorage
     await enterGroup(g.groupId, snap.data().name, snap.data().code);
     return;
   }
