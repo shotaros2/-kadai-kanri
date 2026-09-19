@@ -59,7 +59,11 @@ let nudgeShowing     = false;
 let deadlineMode     = 'datetime'; // 'datetime' | 'period'
 let countdownTimer   = null;
 
-const PERIOD_END = {1:[9,20],2:[10,20],3:[11,20],4:[12,20],5:[14,10],6:[15,10],7:[16,10],8:[17,10]};
+const DEFAULT_PERIOD_END = {1:[9,20],2:[10,20],3:[11,20],4:[12,20],5:[14,10],6:[15,10],7:[16,10],8:[17,10]};
+let PERIOD_END = (() => {
+  try { const s = JSON.parse(localStorage.getItem('kadai_period_times') || 'null'); return s || {...DEFAULT_PERIOD_END}; }
+  catch { return {...DEFAULT_PERIOD_END}; }
+})();
 
 // ── Init ─────────────────────────────────────────────────────
 function getOrCreateMemberId() {
@@ -451,6 +455,16 @@ function renderList() {
 }
 
 // ── Assignment CRUD ───────────────────────────────────────────
+function refreshPeriodSelect() {
+  const sel = document.getElementById('f-period');
+  if (!sel) return;
+  const cur = sel.value;
+  sel.innerHTML = Object.entries(PERIOD_END).map(([n, [h, m]]) =>
+    `<option value="${n}">${n}限目（〜${h}:${String(m).padStart(2,'0')}）</option>`
+  ).join('');
+  if (cur) sel.value = cur;
+}
+
 function openAssignmentModal(id = null) {
   editingAssignmentId = id;
   pendingFiles = [];
@@ -474,6 +488,7 @@ function openAssignmentModal(id = null) {
   } else {
     document.getElementById('f-deadline').value = a ? (a.deadline || '') : '';
   }
+  refreshPeriodSelect();
   document.getElementById('modal-assignment').hidden = false;
   document.getElementById('f-subject').focus();
 }
@@ -947,6 +962,38 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   document.getElementById('btn-leave').addEventListener('click', leaveGroup);
   document.getElementById('modal-my-profile').addEventListener('click', e => { if (e.target === e.currentTarget) e.currentTarget.hidden = true; });
+
+  // Period settings modal
+  document.getElementById('btn-period-settings').addEventListener('click', () => {
+    for (let n = 1; n <= 8; n++) {
+      const [h, m] = PERIOD_END[n] || DEFAULT_PERIOD_END[n];
+      document.getElementById(`ps-${n}`).value = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+    }
+    document.getElementById('modal-period-settings').hidden = false;
+  });
+  document.getElementById('btn-period-settings-cancel').addEventListener('click', () => {
+    document.getElementById('modal-period-settings').hidden = true;
+  });
+  document.getElementById('modal-period-settings').addEventListener('click', e => {
+    if (e.target === e.currentTarget) e.currentTarget.hidden = true;
+  });
+  document.getElementById('btn-period-settings-save').addEventListener('click', () => {
+    for (let n = 1; n <= 8; n++) {
+      const val = document.getElementById(`ps-${n}`).value;
+      if (val) { const [h, m] = val.split(':').map(Number); PERIOD_END[n] = [h, m]; }
+    }
+    localStorage.setItem('kadai_period_times', JSON.stringify(PERIOD_END));
+    refreshPeriodSelect();
+    document.getElementById('modal-period-settings').hidden = true;
+    showToast('時間割を保存しました');
+  });
+  document.getElementById('btn-period-settings-reset').addEventListener('click', () => {
+    PERIOD_END = {...DEFAULT_PERIOD_END};
+    for (let n = 1; n <= 8; n++) {
+      const [h, m] = DEFAULT_PERIOD_END[n];
+      document.getElementById(`ps-${n}`).value = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+    }
+  });
 
   // Nudge popup
   document.getElementById('nudge-popup-close').addEventListener('click', dismissNudgePopup);

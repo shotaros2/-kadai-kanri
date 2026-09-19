@@ -633,6 +633,19 @@ body {
   margin-top: 20px;
 }
 
+/* ── Period time input ── */
+.period-time-input {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--text-main);
+  background: var(--bg-card);
+  width: 100%;
+}
+.period-time-input:focus { outline: none; border-color: var(--primary); }
+
 /* ── Member profile modal ── */
 .profile-modal {
   max-width: 360px;
